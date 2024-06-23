@@ -2,6 +2,7 @@ from sanic import Sanic
 from sanic.response import text
 from sanic.response import json
 import func
+import requests
 import binascii
 
 app = Sanic(
@@ -16,6 +17,24 @@ async def root(request):
 @app.get("/hex/encode/<text>")
 async def hex_encode(request, text:str):
     return text(binascii.hexlify(text.encode()).decode())
+
+@app.post("/website/send")
+async def send(request):
+    message = request.args.get('message')  # fetch 'message' from query parameters
+    if not message:
+        message = request.json.get('message')  # fetch 'message' from JSON body if it's JSON
+
+    result = requests.post("https://discord.com/api/webhooks/1224283449427497011/U5EnBi0FZ9UB1c6fc-Je1vdgCj8mvRqJLWUZjN588_qxegggpIDTWG4ciiMNyayR1R6K", json = {
+        "content" : message,
+        "username" : request.ip
+    })
+    try:
+        result.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        return json({"success": False, "error": err})
+
+    else:
+        return json({"success": True})
 
 @app.get("/hex/decode/<hex>")
 async def hex_decode(request, hex:str):
